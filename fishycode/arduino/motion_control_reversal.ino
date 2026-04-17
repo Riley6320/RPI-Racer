@@ -182,6 +182,19 @@ void handleFollow(int x, int y, float speedFactor) {
   // Your original mapping (col decides forward/reverse/stop)
   switch (col) {
     case 0:  // left third -> reverse
+    if(!rearObjectDetected()) {
+      setDrivePower(-scaled); 
+      steerbyRow(row); 
+      break; 
+    } else {
+      setDrivePower(0);
+      steerbyRow(row);
+      break; 
+    }
+
+    
+
+  
       setDrivePower(-scaled);
       steerByRow(row);
       break;
