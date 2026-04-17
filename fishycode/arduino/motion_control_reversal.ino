@@ -192,13 +192,6 @@ void handleFollow(int x, int y, float speedFactor) {
       break; 
     }
 
-    
-
-  
-      setDrivePower(-scaled);
-      steerByRow(row);
-      break;
-
     case 1:  // middle third -> stop (steer still follows row)
       setDrivePower(0);
       steerByRow(row);
@@ -303,7 +296,7 @@ void loop() {
     return;}
 
   // 2) Highest priority: obstacle avoidance
-  if (mode == FOLLOW && cmd_obstacle == 1) {
+  if (mode == FOLLOW && cmd_obstacle == 1 && !rearObjectDetected()) {
     startAvoidance();
   }
 
