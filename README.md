@@ -245,7 +245,7 @@ These sketches exist as historical bring-up utilities—sweeping servos, looping
 
 ## Lidar integration (to be documented)
 
-_TODO: Add wiring diagram, control strategy, and any supporting code for the lidar once Model 2 testing validates it._
+- **Lidar:** Functions as the main source of object detection spanning 270 degrees at the front of the FOV.
 
 ---
 
