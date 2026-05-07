@@ -13,19 +13,17 @@ const int FRAME_HEIGHT = 480;
 // Your “base” speed in percent (we multiply by speed_factor)
 const int MOTOR_SPEED = 8; //18;
 
-// ESC calibration you measured:
-const int ESC_NEUTRAL   = 1500;
-const int ESC_FWD_START = 1550;
-const int ESC_REV_START = 1450;
+const int ESC_NEUTRAL = 1500; 
+const int ESC_FWD_START = 1550; 
+const int ESC_REV_START = 1450; 
 
-const int ESC_FWD_MAX = 1560; //1650;
-const int ESC_REV_MAX = 1440; //1350;
+int esc_us = ESC_NEUTRAL; 
 
-// Slew limit (prevents instant jumps)
-int esc_us = ESC_NEUTRAL;
+const int ESC_FWD_MAX = 1560; 
+const int ESC_REV_MAX = 1440; 
 
-// random variables
 char lineBuf[96];
+// ESC calibration you measured:
 size_t lineLen = 0; 
 const unsigned long CONTROL_PERIOD_MS = 20; //Hz
 unsigned long lastControlMs = 0; 
@@ -57,11 +55,14 @@ int   cmd_x = FRAME_WIDTH / 2;
 int   cmd_y = FRAME_HEIGHT / 2;
 float cmd_speed_factor = 0.0;
 int   cmd_obstacle = 0;
+unsigned long lastFishUpdate = 0; 
+const unsigned int FISH_UPDATE_COOLDOWN = 250; 
+bool rearBlocked = false; 
 
 // IR Sensor settings
 #define IR_PIN A1
 #define MIN_READINGS_TO_DETERMINE_OBJECT 5
-SharpIR sensor(SharpIR::GP2Y0A21YK0F, IR_PIN)
+SharpIR sensor(SharpIR::GP2Y0A21YK0F, IR_PIN);
 int lastReadings[MIN_READINGS_TO_DETERMINE_OBJECT];
 
 // -------------------------
@@ -87,7 +88,7 @@ void setDrivePower(int power) {
 }
 
 bool rearObjectDetected() {
-  int currentDistance = sensor.getDisance();
+  int currentDistance = sensor.getDistance();
   bool isObject = currentDistance < 50;
   for (int i = 0; i < MIN_READINGS_TO_DETERMINE_OBJECT; i++) {
     if (lastReadings[i] > 50) {
@@ -182,13 +183,13 @@ void handleFollow(int x, int y, float speedFactor) {
   // Your original mapping (col decides forward/reverse/stop)
   switch (col) {
     case 0:  // left third -> reverse
-    if(!rearObjectDetected()) {
+    if(!rearBlocked) {
       setDrivePower(-scaled); 
-      steerbyRow(row); 
+      steerByRow(row); 
       break; 
     } else {
       setDrivePower(0);
-      steerbyRow(row);
+      steerByRow(row);
       break; 
     }
 
@@ -260,7 +261,7 @@ void setup() {
     lastReadings[i] = 100;
   }
   Serial.begin(19200);
-  Serial.println("SharpIR Ready")
+ // Serial.println("SharpIR Ready");
 }
 
 void loop() {
@@ -296,18 +297,26 @@ void loop() {
     return;}
 
   // 2) Highest priority: obstacle avoidance
-  if (mode == FOLLOW && cmd_obstacle == 1 && !rearObjectDetected()) {
-    startAvoidance();
-  }
-
-  if (mode != FOLLOW) {
-    updateAvoidance();
-    return;
-  }
+  
 
   // 3) Normal follow mode
   unsigned long now = millis(); 
   if(now - lastControlMs < CONTROL_PERIOD_MS) return; 
   lastControlMs = now; 
+  
+  rearBlocked = rearObjectDetected(); 
+  
+  if (mode == FOLLOW && cmd_obstacle == 1 && !rearBlocked) {
+    startAvoidance();
+  }
+  if (mode != FOLLOW) {
+    updateAvoidance();
+    return;
+  }
+  if (now - lastFishUpdate > FISH_UPDATE_COOLDOWN)
+  {
   handleFollow(cmd_x, cmd_y, cmd_speed_factor);
-  }// 600,240, 1.0, 0.00, 0// 320,240,1.0,0.00,0
+  lastFishUpdate = now;
+  }
+  }
+  // 600,240, 1.0, 0.00, 0// 320,240,1.0,0.00,0
